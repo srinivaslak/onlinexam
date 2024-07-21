@@ -1,0 +1,45 @@
+<!-- templates/exam.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ exam.title }}</title>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Set the end time from the context
+            const endTime = new Date("{{ end_time|date:'Y-m-d H:i:s' }}").getTime();
+
+            // Update the count down every 1 second
+            const x = setInterval(function() {
+                const now = new Date().getTime();
+                const distance = endTime - now;
+
+                // Time calculations for hours, minutes, and seconds
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                // Display the result in the element with id="timer"
+                document.getElementById("timer").innerHTML = hours + "h " + minutes + "m " + seconds + "s ";
+
+                // If the count down is finished, write some text
+                if (distance < 0) {
+                    clearInterval(x);
+                    document.getElementById("timer").innerHTML = "EXPIRED";
+                    document.getElementById("exam-form").submit(); // Automatically submit the form
+                }
+            }, 1000);
+        });
+    </script>
+</head>
+<body>
+    <h1>{{ exam.title }}</h1>
+    <div id="timer"></div>
+    <form id="exam-form" method="post" action="{% url 'submit_exam' exam.id %}">
+        {% csrf_token %}
+        <!-- Exam questions go here -->
+        <button type="submit">Submit</button>
+    </form>
+</body>
+</html>

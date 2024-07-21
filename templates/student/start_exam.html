@@ -1,0 +1,161 @@
+{% extends 'student/studentbase.html' %}
+{% block content %}
+{% load static %}
+
+<head>
+  <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
+  <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
+  <script src="//code.jquery.com/jquery-1.11.1.min.js"></script>
+
+  <style>
+    .code-block {
+      background-color: #282c34;
+      color: #61dafb;
+      padding: 10px;
+      border-radius: 5px;
+      font-family: 'Courier New', Courier, monospace;
+      margin-bottom: 20px;
+      white-space: pre; /* Preserve whitespace and formatting */
+    }
+  </style>
+</head>
+
+<div class="jumbotron my-4">
+  <form class="form" autocomplete="off" onsubmit="return saveAns()" action="{% url 'calculate_marks' %}" method="POST" id="exam-form">
+    {% csrf_token %}
+    <h2>
+      <script>
+        function saveAns() {
+          var ele = document.getElementsByTagName('input');
+          for (var i = 0; i < ele.length; i++) {
+            if (ele[i].type == "radio") {
+              if (ele[i].checked) {
+                setCookie(ele[i].name, ele[i].value, 3)
+              }
+            }
+          }
+        }
+      
+        function setCookie(cname, cvalue, exdays) {
+          var d = new Date();
+          d.setTime(d.getTime() + (exdays * 24 * 60 * 60 * 1000));
+          var expires = "expires=" + d.toUTCString();
+          document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+        }
+
+        function getCookie(cname) {
+          var name = cname + "=";
+          var decodedCookie = decodeURIComponent(document.cookie);
+          var ca = decodedCookie.split(';');
+          for (var i = 0; i < ca.length; i++) {
+            var c = ca[i];
+            while (c.charAt(0) == ' ') {
+              c = c.substring(1);
+            }
+            if (c.indexOf(name) == 0) {
+              return c.substring(name.length, c.length);
+            }
+          }
+          return "";
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+          const examDuration = 5; // Duration in minutes
+          let endTime = localStorage.getItem("endTime");
+
+          if (!endTime) {
+            endTime = new Date().getTime() + examDuration * 60 * 1000;
+            localStorage.setItem("endTime", endTime);
+          }
+
+          const x = setInterval(function() {
+            const now = new Date().getTime();
+            const distance = endTime - now;
+
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            document.getElementById("timer").innerHTML = hours + "h " + minutes + "m " + seconds + "s ";
+
+            if (distance < 0) {
+              clearInterval(x);
+              document.getElementById("timer").innerHTML = "EXPIRED";
+              document.getElementById("exam-form").submit(); // Automatically submit the form
+              localStorage.removeItem("endTime"); // Clear end time after expiration
+            }
+          }, 1000);
+        });
+      </script>
+    </h2>
+    <h2 style="text-align: center;">Course: {{ course.course_name }}</h2>
+    <h2><div id="timer" style="text-align: center; font-size: 20px; margin-top: 20px;"></div></h2>
+    
+    {% for q in page_obj %}
+      <h3 class="text-danger">
+        <div class="code-block">{{ forloop.counter }}. {{ q.question }}</div>
+      </h3>
+      <h4 style="text-align: right;">[{{ q.marks }} Marks]</h4>
+
+      <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+      
+      <div class="form-check mx-4">
+        <input class="form-check-input" type="radio" name="{{ forloop.counter }}" id="{{ q.option1 }}" value="Option1">
+        <label class="form-check-label" for="{{ q.option1 }}">
+          {{ q.option1 }}
+        </label>
+      </div>
+      <div class="form-check mx-4">
+        <input class="form-check-input" type="radio" name="{{ forloop.counter }}" id="{{ q.option2 }}" value="Option2">
+        <label class="form-check-label" for="{{ q.option2 }}">
+          {{ q.option2 }}
+        </label>
+      </div>
+      <div class="form-check mx-4">
+        <input class="form-check-input" type="radio" name="{{ forloop.counter }}" id="{{ q.option3 }}" value="Option3">
+        <label class="form-check-label" for="{{ q.option3 }}">
+          {{ q.option3 }}
+        </label>
+      </div>
+      <div class="form-check mx-4">
+        <input class="form-check-input" type="radio" name="{{ forloop.counter }}" id="{{ q.option4 }}" value="Option4">
+        <label class="form-check-label" for="{{ q.option4 }}">
+          {{ q.option4 }}
+        </label>
+      </div>
+    {% endfor %}
+    
+    <input class="btn btn-success btn-lg" style="border-radius: 0%;" type="submit" value="Submit Answers">
+
+    <nav aria-label="Page navigation">
+      <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Previous">
+              <span aria-hidden="true">&laquo;</span>
+              <span class="sr-only">Previous</span>
+            </a>
+          </li>
+        {% endif %}
+        
+        {% for num in page_obj.paginator.page_range %}
+          <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+          </li>
+        {% endfor %}
+        
+        {% if page_obj.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Next">
+              <span aria-hidden="true">&raquo;</span>
+              <span class="sr-only">Next</span>
+            </a>
+          </li>
+        {% endif %}
+      </ul>
+    </nav>
+  </form>
+</div>
+
+<br><br><br><br><br><br>
+{% endblock content %}
